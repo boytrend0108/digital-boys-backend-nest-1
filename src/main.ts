@@ -6,6 +6,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalPipes(new ValidationPipe()); // Enable validation globally
+  app.setGlobalPrefix('api'); // Set global prefix for all routes
 
   await app.listen(process.env.PORT ?? 3000);
 }
