@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  postgres:
+    container_name: postgres-nest-1
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - '5433:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - nest-network
+
+volumes:
+  pgdata:
+
+networks:
+  nest-network:
