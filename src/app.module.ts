@@ -4,18 +4,17 @@ import { AppService } from './app.service';
 import { TaskModule } from './task/task.module';
 import { MovieModule } from './movie/movie.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { gettTypeOrmConfig } from './configs/typeorm.config';
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5433,
-      username: 'root',
-      password: '123456',
-      database: 'nestdb',
-      entities: [],
-      synchronize: true,
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: gettTypeOrmConfig,
+      inject: [ConfigService],
     }),
     TaskModule,
     MovieModule,
