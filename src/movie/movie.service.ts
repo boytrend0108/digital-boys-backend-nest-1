@@ -1,13 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MovieEntity } from './entitiies/movie.entity';
-import { Not, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
+import { CreateMovieDto } from './dto/create-movie.dto';
+import { ActorEntity } from 'src/actor/entities/actor.entitie';
+import { MoviePosterEntity } from './entitiies/poster.entity';
 
 @Injectable()
 export class MovieService {
   constructor(
     @InjectRepository(MovieEntity) // inject repository
     private readonly movieRepository: Repository<MovieEntity>,
+    @InjectRepository(ActorEntity)
+    private readonly actorRepository: Repository<ActorEntity>,
+    @InjectRepository(MoviePosterEntity)
+    private readonly moviePosterRepository: Repository<MoviePosterEntity>,
   ) {}
 
   async findAll(): Promise<MovieEntity[]> {
@@ -20,8 +27,11 @@ export class MovieService {
     });
   }
 
-  async findById(id: number): Promise<MovieEntity> {
-    const movie = await this.movieRepository.findOneBy({ id });
+  async findById(id: string): Promise<MovieEntity> {
+    const movie = await this.movieRepository.findOne({
+      where: { id },
+      relations: ['actors'],
+    });
 
     if (!movie) {
       throw new NotFoundException(`Movie with ID ${id} not found`);
@@ -29,18 +39,36 @@ export class MovieService {
     return movie;
   }
 
-  async create(dto: Partial<MovieEntity>): Promise<MovieEntity> {
-    const newMovie = this.movieRepository.create(dto);
+  async create(dto: CreateMovieDto): Promise<MovieEntity> {
+    const { actorsIds, imageUrl } = dto;
+    const actors = await this.actorRepository.findBy({
+      id: In(actorsIds),
+    });
+
+    if (actors.length === 0) {
+      throw new NotFoundException(
+        `No actors found with IDs ${actorsIds.join(', ')}`,
+      );
+    }
+
+    let poster: MoviePosterEntity | null = null;
+
+    if (imageUrl) {
+      poster = this.moviePosterRepository.create({ url: imageUrl });
+      await this.moviePosterRepository.save(poster);
+    }
+
+    const newMovie = this.movieRepository.create({ ...dto, actors, poster });
     return await this.movieRepository.save(newMovie);
   }
 
-  async update(id: number, dto: Partial<MovieEntity>): Promise<MovieEntity> {
+  async update(id: string, dto: Partial<MovieEntity>): Promise<MovieEntity> {
     const movie = await this.findById(id);
     Object.assign(movie, dto);
     return await this.movieRepository.save(movie);
   }
 
-  async delete(id: number): Promise<number> {
+  async delete(id: string): Promise<string> {
     const movie = await this.findById(id);
     await this.movieRepository.remove(movie);
     return movie.id;
