@@ -30,7 +30,7 @@ export class MovieService {
   async findById(id: string): Promise<MovieEntity> {
     const movie = await this.movieRepository.findOne({
       where: { id },
-      relations: ['actors'],
+      relations: ['actors', 'poster'],
     });
 
     if (!movie) {
